@@ -1203,6 +1203,8 @@ static void outstream_thread_run(void *arg) {
             case SND_PCM_STATE_DISCONNECTED:
                 outstream->error_callback(outstream, SoundIoErrorStreaming);
                 return;
+            default:
+                continue;
         }
     }
 }
@@ -1272,6 +1274,8 @@ static void instream_thread_run(void *arg) {
             case SND_PCM_STATE_DISCONNECTED:
                 instream->error_callback(instream, SoundIoErrorStreaming);
                 return;
+            default:
+                continue;
         }
     }
 }
