@@ -24,6 +24,14 @@
 #include <audiosessiontypes.h>
 #include <audiopolicy.h>
 
+#ifndef AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM 0x80000000
+#endif
+
+#ifndef AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY 0x08000000
+#endif
+
 struct SoundIoPrivate;
 int soundio_wasapi_init(struct SoundIoPrivate *si);
 
@@ -56,6 +64,7 @@ struct SoundIoOutStreamWasapi {
     IAudioClockAdjustment *audio_clock_adjustment;
     IAudioRenderClient *audio_render_client;
     IAudioSessionControl *audio_session_control;
+    ISimpleAudioVolume *audio_volume_control;
     LPWSTR stream_name;
     bool need_resample;
     struct SoundIoOsThread *thread;
@@ -76,6 +85,7 @@ struct SoundIoOutStreamWasapi {
     int open_err;
     bool started;
     UINT32 min_padding_frames;
+    float volume;
     struct SoundIoChannelArea areas[SOUNDIO_MAX_CHANNELS];
 };
 
@@ -100,6 +110,7 @@ struct SoundIoInStreamWasapi {
     bool started;
     char *read_buf;
     int read_buf_frames_left;
+	int opened_buf_frames;
     struct SoundIoChannelArea areas[SOUNDIO_MAX_CHANNELS];
 };
 

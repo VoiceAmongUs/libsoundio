@@ -290,6 +290,7 @@ void soundio_disconnect(struct SoundIo *soundio) {
     si->outstream_clear_buffer = NULL;
     si->outstream_pause = NULL;
     si->outstream_get_latency = NULL;
+    si->outstream_set_volume = NULL;
 
     si->instream_open = NULL;
     si->instream_destroy = NULL;
@@ -582,6 +583,13 @@ static void default_instream_error_callback(struct SoundIoInStream *is, enum Sou
     soundio_panic("libsoundio: %s", soundio_error_name(err));
 }
 
+int soundio_outstream_set_volume(struct SoundIoOutStream *outstream, double volume) {
+    struct SoundIo *soundio = outstream->device->soundio;
+    struct SoundIoPrivate *si = (struct SoundIoPrivate *)soundio;
+    struct SoundIoOutStreamPrivate *os = (struct SoundIoOutStreamPrivate *)outstream;
+    return si->outstream_set_volume(si, os, volume);
+}
+
 static void default_overflow_callback(struct SoundIoInStream *instream) { }
 
 struct SoundIoInStream *soundio_instream_create(struct SoundIoDevice *device) {
@@ -743,8 +751,8 @@ const struct SoundIoChannelLayout *soundio_best_matching_channel_layout(
 }
 
 static int compare_layouts(const void *a, const void *b) {
-    const struct SoundIoChannelLayout *layout_a = *((struct SoundIoChannelLayout **)a);
-    const struct SoundIoChannelLayout *layout_b = *((struct SoundIoChannelLayout **)b);
+    const struct SoundIoChannelLayout *layout_a = (const struct SoundIoChannelLayout *)a;
+    const struct SoundIoChannelLayout *layout_b = (const struct SoundIoChannelLayout *)b;
     if (layout_a->channel_count > layout_b->channel_count)
         return -1;
     else if (layout_a->channel_count < layout_b->channel_count)
