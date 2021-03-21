@@ -165,7 +165,7 @@ struct SoundIoPrivate {
     enum SoundIoError (*outstream_clear_buffer)(struct SoundIoPrivate *, struct SoundIoOutStreamPrivate *);
     enum SoundIoError (*outstream_pause)(struct SoundIoPrivate *, struct SoundIoOutStreamPrivate *, bool pause);
     enum SoundIoError (*outstream_get_latency)(struct SoundIoPrivate *, struct SoundIoOutStreamPrivate *, double *out_latency);
-
+    enum SoundIoError (*outstream_set_volume)(struct SoundIoPrivate *, struct SoundIoOutStreamPrivate *, float volume);
 
     enum SoundIoError (*instream_open)(struct SoundIoPrivate *, struct SoundIoInStreamPrivate *);
     void (*instream_destroy)(struct SoundIoPrivate *, struct SoundIoInStreamPrivate *);
