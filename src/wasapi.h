@@ -33,7 +33,7 @@
 #endif
 
 struct SoundIoPrivate;
-int soundio_wasapi_init(struct SoundIoPrivate *si);
+enum SoundIoError soundio_wasapi_init(struct SoundIoPrivate *si);
 
 struct SoundIoDeviceWasapi {
     double period_duration;

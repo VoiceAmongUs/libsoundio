@@ -65,13 +65,13 @@ static backend_init_t backend_init_fns[] = {
 #endif
 
 #ifdef SOUNDIO_HAVE_WASAPI
-    soundio_wasapi_init,
+    &soundio_wasapi_init,
 #else
     NULL,
 #endif
 
 #ifdef SOUNDIO_HAVE_ANDROID
-    soundio_android_init,
+    &soundio_android_init,
 #else
     NULL,
 #endif

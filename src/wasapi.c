@@ -1562,7 +1562,7 @@ static void outstream_thread_run(void *arg) {
     outstream_thread_deinit(si, os);
 }
 
-static int outstream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
+static enum SoundIoError outstream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
     struct SoundIoOutStream *outstream = &os->pub;
     struct SoundIoDevice *device = outstream->device;
@@ -1607,7 +1607,7 @@ static int outstream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStr
     SOUNDIO_ATOMIC_FLAG_TEST_AND_SET(osw->thread_exit_flag);
     int err;
     if ((err = soundio_os_thread_create(outstream_thread_run, os,
-                    soundio->emit_rtprio_warning, &osw->thread)))
+                    soundio, &osw->thread)))
     {
         outstream_destroy_wasapi(si, os);
         return err;
@@ -1623,10 +1623,10 @@ static int outstream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStr
         return osw->open_err;
     }
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os, bool pause) {
+static enum SoundIoError outstream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os, bool pause) {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
 
     SOUNDIO_ATOMIC_STORE(osw->desired_pause_state, pause);
@@ -1639,10 +1639,10 @@ static int outstream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoOutSt
         soundio_os_mutex_unlock(osw->mutex);
     }
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
+static enum SoundIoError outstream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
 
     soundio_os_mutex_lock(osw->mutex);
@@ -1650,10 +1650,10 @@ static int outstream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoOutSt
     soundio_os_cond_signal(osw->start_cond, osw->mutex);
     soundio_os_mutex_unlock(osw->mutex);
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_begin_write_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os,
+static enum SoundIoError outstream_begin_write_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os,
         struct SoundIoChannelArea **out_areas, int *frame_count)
 {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
@@ -1677,19 +1677,19 @@ static int outstream_begin_write_wasapi(struct SoundIoPrivate *si, struct SoundI
 
     *out_areas = osw->areas;
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_end_write_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
+static enum SoundIoError outstream_end_write_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
     HRESULT hr;
     if (FAILED(hr = IAudioRenderClient_ReleaseBuffer(osw->audio_render_client, osw->write_frame_count, 0))) {
         return SoundIoErrorStreaming;
     }
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_clear_buffer_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
+static enum SoundIoError outstream_clear_buffer_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os) {
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
 
     if (osw->h_event) {
@@ -1701,10 +1701,10 @@ static int outstream_clear_buffer_wasapi(struct SoundIoPrivate *si, struct Sound
         soundio_os_mutex_unlock(osw->mutex);
     }
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os,
+static enum SoundIoError outstream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os,
         double *out_latency)
 {
     struct SoundIoOutStream *outstream = &os->pub;
@@ -1717,10 +1717,10 @@ static int outstream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundI
     }
 
     *out_latency = frames_used / (double)outstream->sample_rate;
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int outstream_set_volume_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os, float volume)
+static enum SoundIoError outstream_set_volume_wasapi(struct SoundIoPrivate *si, struct SoundIoOutStreamPrivate *os, float volume)
 {
     struct SoundIoOutStream *outstream = &os->pub;
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
@@ -1732,7 +1732,7 @@ static int outstream_set_volume_wasapi(struct SoundIoPrivate *si, struct SoundIo
     }
 
     outstream->volume = volume;
-    return 0;
+    return SoundIoErrorNone;
 }
 
 static void instream_thread_deinit(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
@@ -2012,7 +2012,7 @@ static void instream_thread_run(void *arg) {
     instream_thread_deinit(si, is);
 }
 
-static int instream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
+static enum SoundIoError instream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
     struct SoundIoInStreamWasapi *isw = &is->backend_data.wasapi;
     struct SoundIoInStream *instream = &is->pub;
     struct SoundIoDevice *device = instream->device;
@@ -2053,7 +2053,7 @@ static int instream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoInStrea
     SOUNDIO_ATOMIC_FLAG_TEST_AND_SET(isw->thread_exit_flag);
     int err;
     if ((err = soundio_os_thread_create(instream_thread_run, is,
-                    soundio->emit_rtprio_warning, &isw->thread)))
+                    soundio, &isw->thread)))
     {
         instream_destroy_wasapi(si, is);
         return err;
@@ -2069,10 +2069,10 @@ static int instream_open_wasapi(struct SoundIoPrivate *si, struct SoundIoInStrea
         return isw->open_err;
     }
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int instream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is, bool pause) {
+static enum SoundIoError instream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is, bool pause) {
     struct SoundIoInStreamWasapi *isw = &is->backend_data.wasapi;
     HRESULT hr;
     if (pause && !isw->is_paused) {
@@ -2084,10 +2084,10 @@ static int instream_pause_wasapi(struct SoundIoPrivate *si, struct SoundIoInStre
             return SoundIoErrorStreaming;
         isw->is_paused = false;
     }
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int instream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
+static enum SoundIoError instream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
     struct SoundIoInStreamWasapi *isw = &is->backend_data.wasapi;
 
     soundio_os_mutex_lock(isw->mutex);
@@ -2095,10 +2095,10 @@ static int instream_start_wasapi(struct SoundIoPrivate *si, struct SoundIoInStre
     soundio_os_cond_signal(isw->start_cond, isw->mutex);
     soundio_os_mutex_unlock(isw->mutex);
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int instream_begin_read_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is,
+static enum SoundIoError instream_begin_read_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is,
         struct SoundIoChannelArea **out_areas, int *frame_count)
 {
     struct SoundIoInStreamWasapi *isw = &is->backend_data.wasapi;
@@ -2136,10 +2136,10 @@ static int instream_begin_read_wasapi(struct SoundIoPrivate *si, struct SoundIoI
         *out_areas = NULL;
     }
 
-    return 0;
+    return SoundIoErrorNone;
 }
 
-static int instream_end_read_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
+static enum SoundIoError instream_end_read_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is) {
     struct SoundIoInStreamWasapi *isw = &is->backend_data.wasapi;
     HRESULT hr;
 
@@ -2154,7 +2154,7 @@ static int instream_end_read_wasapi(struct SoundIoPrivate *si, struct SoundIoInS
     return 0;
 }
 
-static int instream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is,
+static enum SoundIoError instream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundIoInStreamPrivate *is,
         double *out_latency)
 {
     struct SoundIoInStream *instream = &is->pub;
@@ -2167,7 +2167,7 @@ static int instream_get_latency_wasapi(struct SoundIoPrivate *si, struct SoundIo
     }
 
     *out_latency = frames_used / (double)instream->sample_rate;
-    return 0;
+    return SoundIoErrorNone;
 }
 
 
@@ -2272,7 +2272,7 @@ static struct IMMNotificationClientVtbl soundio_MMNotificationClient = {
     soundio_MMNotificationClient_OnPropertyValueChanged,
 };
 
-int soundio_wasapi_init(struct SoundIoPrivate *si) {
+enum SoundIoError soundio_wasapi_init(struct SoundIoPrivate *si) {
     struct SoundIoWasapi *siw = &si->backend_data.wasapi;
     int err;
 
@@ -2334,5 +2334,5 @@ int soundio_wasapi_init(struct SoundIoPrivate *si) {
     si->instream_pause = instream_pause_wasapi;
     si->instream_get_latency = instream_get_latency_wasapi;
 
-    return 0;
+    return SoundIoErrorNone;
 }
